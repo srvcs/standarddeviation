@@ -1,0 +1,125 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "srvcs-standarddeviation",
+    "description": "",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [],
+        "summary": "`GET /` — service identity (srvcs service standard).",
+        "operationId": "index",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Info"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [],
+        "summary": "`POST /` — the population standard deviation of a list of numbers, as an\n`f64`.",
+        "description": "This service does no arithmetic of its own. It delegates the entire\ncomputation to `srvcs-populationstddev`:\n\n```text\nresult = populationstddev(values).result\n```\n\nSo `standarddeviation([1,2,3,4,5]) ~= 1.4142135623730951`. Validation (e.g.\nan empty list, or a non-numeric element) is propagated from\n`srvcs-populationstddev`'s `422`.",
+        "operationId": "evaluate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdDevResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "empty list, or an element is not a valid number (forwarded)"
+          },
+          "500": {
+            "description": "a dependency returned an unusable response"
+          },
+          "503": {
+            "description": "a dependency is unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EvalRequest": {
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "properties": {
+          "values": {
+            "type": "object",
+            "description": "The list of numbers whose population standard deviation to compute."
+          }
+        }
+      },
+      "Info": {
+        "type": "object",
+        "required": [
+          "service",
+          "concern",
+          "depends_on"
+        ],
+        "properties": {
+          "concern": {
+            "type": "string"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "service": {
+            "type": "string"
+          }
+        }
+      },
+      "StdDevResponse": {
+        "type": "object",
+        "required": [
+          "values",
+          "result"
+        ],
+        "properties": {
+          "result": {
+            "type": "number",
+            "format": "double",
+            "description": "The population standard deviation, as an `f64`."
+          },
+          "values": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
