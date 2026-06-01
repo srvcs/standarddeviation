@@ -1,57 +1,65 @@
 # srvcs-standarddeviation
 
-The standard-deviation service of the srvcs.cloud distributed standard library.
+## Name
 
-Its single concern: **the population standard deviation of a list of numbers**,
-returned as an `f64`. It does no arithmetic of its own. It is a thin
-orchestrator that delegates the entire computation to a single primitive:
+| Field | Value |
+| --- | --- |
+| Service | `srvcs-standarddeviation` |
+| Slug | `standarddeviation` |
+| Repository | `srvcs/standarddeviation` |
+| Package | `srvcs-standarddeviation` |
+| Kind | `orchestrator` |
 
-```text
-result = populationstddev(values).result    # one call to srvcs-populationstddev
-```
+## Function
 
-So `standarddeviation([1,2,3,4,5]) ~= 1.4142135623730951`. Validation (e.g. an
-**empty list**, or a non-numeric element) is propagated from
-`srvcs-populationstddev`'s `422`.
+statistics: standard deviation (population)
+
+## Dependencies
+
+| Dependency | Repository |
+| --- | --- |
+| `srvcs-populationstddev` | [srvcs/populationstddev](https://github.com/srvcs/populationstddev) |
 
 ## API
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/` | Service identity, concern, and dependency list |
-| `POST` | `/` | Compute the population standard deviation of the numbers in `values` |
-| `GET` | `/healthz` `/readyz` `/metrics` `/openapi.json` | srvcs service standard surface |
+| `GET` | `/` | Service identity |
+| `POST` | `/` | Evaluate the service function |
+| `GET` | `/healthz` | Liveness probe |
+| `GET` | `/readyz` | Readiness probe |
+| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/openapi.json` | OpenAPI document |
 
-```sh
-curl -s -X POST localhost:8080/ -H 'content-type: application/json' -d '{"values": [1, 2, 3, 4, 5]}'
-# {"values":[1,2,3,4,5],"result":1.4142135623730951}
-```
+## Inputs
 
-Responses:
+| Name | Type | Required |
+| --- | --- | --- |
+| `values` | `json[]` | yes |
 
-- `200 {"values": [...], "result": x}` — evaluated; `result` is an `f64`.
-- `422` — empty list, or an element is not a valid number (forwarded from `srvcs-populationstddev`).
-- `500` — a dependency returned an unusable response.
-- `503` — a dependency is unavailable.
+## Outputs
 
-## Dependencies
-
-- [`srvcs-populationstddev`](https://github.com/srvcs/populationstddev)
-
-This service is an orchestrator: it never calls `srvcs-isnumber` directly.
-Input validation propagates from its dependency — a non-numeric element is
-caught by `srvcs-populationstddev`, whose `422` is forwarded verbatim.
+| Name | Type |
+| --- | --- |
+| `values` | `json[]` |
+| `result` | `number` |
 
 ## Configuration
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `SRVCS_BIND_ADDR` | `0.0.0.0:8080` | Bind address |
-| `SRVCS_POPULATIONSTDDEV_URL` | `http://127.0.0.1:8090` | Base URL of `srvcs-populationstddev` |
 | `SRVCS_ENV` | `development` | Environment label for logs |
 | `RUST_LOG` | `info,tower_http=info` | Tracing filter |
+| `SRVCS_POPULATIONSTDDEV_URL` | `` | Base URL for srvcs-populationstddev |
 
-## Local checks
+## Error Behavior
+
+- `422` means the request could not be evaluated for the documented input shape.
+- `503` means a required dependency was unavailable or returned an unexpected response.
+- Dependency validation errors are forwarded when this service delegates validation.
+
+## Local Checks
 
 ```sh
 cargo fmt --check
@@ -59,11 +67,8 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-Orchestration tests stand up a mock dependency in-process that **actually
-computes** the population standard deviation, so the composition is genuinely
-exercised against asserted cases — e.g. `standarddeviation([1,2,3,4,5]) ~=
-1.4142135623730951` — with a `1e-9` tolerance. See
-[`srvcs/platform`](https://github.com/srvcs/platform) for the shared standard.
+See the [srvcs service standard](https://github.com/srvcs/platform/blob/main/STANDARD.md) for the full operational contract.
 
-> Note: the `cargoHash` in `flake.nix` is inherited from the template and must be
-> refreshed with a `nix build` before the Nix gates pass.
+## Metadata
+
+Machine-readable service metadata lives in `srvcs.yaml`. Keep it aligned with this README when the service contract changes.
